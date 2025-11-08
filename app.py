@@ -6,6 +6,8 @@ from db_config import DATABASE_URI, DB_CONFIG
 from user_management import user_management_bp, init_user_management
 from master_data import master_data_bp, init_master_data
 from projects_teaming import projects_teaming_bp, init_projects_teaming
+from tasks_collaboration import tasks_collaboration_bp, init_tasks_collaboration
+from sales_orders import sales_orders_bp, init_sales_orders
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -33,10 +35,18 @@ Partner, Product = init_master_data(db)
 # Initialize projects and teaming module with database
 Project, ProjectMember = init_projects_teaming(db)
 
+# Initialize tasks and collaboration module with database
+Task, TaskAssignment, TaskComment, TaskAttachment = init_tasks_collaboration(db)
+
+# Initialize sales orders module with database
+SalesOrder, SalesOrderLine = init_sales_orders(db)
+
 # Register blueprints
 app.register_blueprint(user_management_bp, url_prefix='/api/v1')
 app.register_blueprint(master_data_bp, url_prefix='/api/v1')
 app.register_blueprint(projects_teaming_bp, url_prefix='/api/v1')
+app.register_blueprint(tasks_collaboration_bp, url_prefix='/api/v1')
+app.register_blueprint(sales_orders_bp, url_prefix='/api/v1')
 
 @app.route('/', methods=['GET'])
 def health_check():

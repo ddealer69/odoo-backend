@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember, Task, TaskAssignment, TaskComment, TaskAttachment, SalesOrder, SalesOrderLine
+from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember, Task, TaskAssignment, TaskComment, TaskAttachment, SalesOrder, SalesOrderLine, PurchaseOrder, PurchaseOrderLine
 
 def create_tables():
     """Create all database tables"""
@@ -863,6 +863,216 @@ def seed_sales_orders_data():
         traceback.print_exc()
         return False
 
+def seed_purchase_orders_data():
+    """Seed sample purchase orders data"""
+    try:
+        with app.app_context():
+            print("\n🛒 Seeding purchase orders data...")
+            
+            # Check if we have necessary data
+            if Project.query.count() == 0:
+                print("  ⚠️  No projects found. Please seed projects first!")
+                return False
+            
+            if Partner.query.filter(Partner.type.in_(['vendor', 'both'])).count() == 0:
+                print("  ⚠️  No vendors found. Please seed partners first!")
+                return False
+            
+            if Product.query.count() == 0:
+                print("  ⚠️  No products found. Please seed products first!")
+                return False
+            
+            # Get sample data
+            from datetime import date
+            projects = Project.query.limit(3).all()
+            vendors = Partner.query.filter(Partner.type.in_(['vendor', 'both'])).all()
+            products = Product.query.all()
+            
+            # Sample purchase orders
+            purchase_orders_data = [
+                {
+                    'po_number': 'PO-2024-001',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'vendor': vendors[0] if len(vendors) > 0 else None,
+                    'order_date': date(2024, 10, 15),
+                    'status': 'confirmed',
+                    'currency': 'INR',
+                    'notes': 'Office supplies for Q4 2024',
+                    'lines': [
+                        {
+                            'product': products[0] if len(products) > 0 else None,
+                            'description': 'Laptops - Dell Latitude 5520',
+                            'quantity': 10,
+                            'unit_cost': 65000.00
+                        },
+                        {
+                            'product': products[1] if len(products) > 1 else None,
+                            'description': 'Monitors - 27 inch 4K',
+                            'quantity': 10,
+                            'unit_cost': 25000.00
+                        }
+                    ]
+                },
+                {
+                    'po_number': 'PO-2024-002',
+                    'project': projects[1] if len(projects) > 1 else projects[0],
+                    'vendor': vendors[1] if len(vendors) > 1 else vendors[0],
+                    'order_date': date(2024, 10, 20),
+                    'status': 'confirmed',
+                    'currency': 'USD',
+                    'notes': 'Cloud infrastructure services',
+                    'lines': [
+                        {
+                            'product': None,
+                            'description': 'AWS Cloud Services - Monthly',
+                            'quantity': 1,
+                            'unit_cost': 5000.00
+                        },
+                        {
+                            'product': None,
+                            'description': 'Database Hosting - Monthly',
+                            'quantity': 1,
+                            'unit_cost': 2000.00
+                        }
+                    ]
+                },
+                {
+                    'po_number': 'PO-2024-003',
+                    'project': projects[2] if len(projects) > 2 else projects[0],
+                    'vendor': vendors[2] if len(vendors) > 2 else vendors[0],
+                    'order_date': date(2024, 11, 1),
+                    'status': 'draft',
+                    'currency': 'EUR',
+                    'notes': 'Software licenses for development team',
+                    'lines': [
+                        {
+                            'product': products[2] if len(products) > 2 else None,
+                            'description': 'JetBrains All Products Pack - Annual',
+                            'quantity': 5,
+                            'unit_cost': 649.00
+                        },
+                        {
+                            'product': None,
+                            'description': 'GitHub Enterprise - Annual',
+                            'quantity': 1,
+                            'unit_cost': 2100.00
+                        }
+                    ]
+                },
+                {
+                    'po_number': 'PO-2024-004',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'vendor': vendors[0] if len(vendors) > 0 else None,
+                    'order_date': date(2024, 11, 5),
+                    'status': 'closed',
+                    'currency': 'INR',
+                    'notes': 'Completed purchase - Office furniture',
+                    'lines': [
+                        {
+                            'product': None,
+                            'description': 'Ergonomic Office Chairs',
+                            'quantity': 15,
+                            'unit_cost': 12000.00
+                        },
+                        {
+                            'product': None,
+                            'description': 'Standing Desks',
+                            'quantity': 10,
+                            'unit_cost': 18000.00
+                        },
+                        {
+                            'product': None,
+                            'description': 'Meeting Room Tables',
+                            'quantity': 3,
+                            'unit_cost': 35000.00
+                        }
+                    ]
+                },
+                {
+                    'po_number': 'PO-2024-005',
+                    'project': projects[1] if len(projects) > 1 else projects[0],
+                    'vendor': vendors[1] if len(vendors) > 1 else vendors[0],
+                    'order_date': date(2024, 11, 8),
+                    'status': 'cancelled',
+                    'currency': 'USD',
+                    'notes': 'Cancelled due to budget constraints',
+                    'lines': [
+                        {
+                            'product': products[3] if len(products) > 3 else None,
+                            'description': 'Marketing Campaign - Digital Ads',
+                            'quantity': 1,
+                            'unit_cost': 10000.00
+                        }
+                    ]
+                }
+            ]
+            
+            for po_data in purchase_orders_data:
+                # Check if PO already exists
+                existing_po = PurchaseOrder.query.filter_by(po_number=po_data['po_number']).first()
+                if existing_po:
+                    print(f"  ⚠️  Purchase order already exists: {po_data['po_number']}")
+                    continue
+                
+                lines_data = po_data.pop('lines')
+                project = po_data.pop('project')
+                vendor = po_data.pop('vendor')
+                
+                if not project or not vendor:
+                    print(f"  ⚠️  Skipping PO {po_data['po_number']} - missing project or vendor")
+                    continue
+                
+                purchase_order = PurchaseOrder(
+                    po_number=po_data['po_number'],
+                    project_id=project.id,
+                    vendor_id=vendor.id,
+                    order_date=po_data['order_date'],
+                    status=po_data['status'],
+                    currency=po_data['currency'],
+                    notes=po_data['notes']
+                )
+                
+                db.session.add(purchase_order)
+                db.session.flush()
+                print(f"  🛒 Created purchase order: {po_data['po_number']}")
+                
+                # Add order lines
+                total_cost = 0
+                for line_data in lines_data:
+                    product = line_data.pop('product', None)
+                    
+                    order_line = PurchaseOrderLine(
+                        purchase_order_id=purchase_order.id,
+                        product_id=product.id if product else None,
+                        description=line_data['description'],
+                        quantity=line_data['quantity'],
+                        unit_cost=line_data['unit_cost']
+                    )
+                    
+                    db.session.add(order_line)
+                    line_total = float(line_data['quantity']) * float(line_data['unit_cost'])
+                    total_cost += line_total
+                    print(f"    📝 Added line: {line_data['description']} - {line_data['quantity']} x {line_data['unit_cost']} = {line_total}")
+                
+                print(f"    💰 Total order cost: {total_cost} {po_data['currency']}")
+            
+            db.session.commit()
+            print("✅ Purchase orders data seeded successfully!")
+            
+            # Print summary
+            print("\n📊 Purchase Orders Summary:")
+            print(f"  Purchase Orders: {PurchaseOrder.query.count()}")
+            print(f"  Purchase Order Lines: {PurchaseOrderLine.query.count()}")
+            
+            return True
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error seeding purchase orders data: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def reset_database():
     """Drop and recreate all tables"""
     try:
@@ -891,12 +1101,14 @@ def main():
                 seed_projects_data()
                 seed_tasks_data()
                 seed_sales_orders_data()
+                seed_purchase_orders_data()
         elif command == 'seed':
             seed_sample_data()
             seed_master_data()
             seed_projects_data()
             seed_tasks_data()
             seed_sales_orders_data()
+            seed_purchase_orders_data()
         elif command == 'seed-users':
             seed_sample_data()
         elif command == 'seed-master':
@@ -907,18 +1119,21 @@ def main():
             seed_tasks_data()
         elif command == 'seed-sales':
             seed_sales_orders_data()
+        elif command == 'seed-purchase':
+            seed_purchase_orders_data()
         elif command == 'create':
             create_tables()
         else:
             print("❌ Unknown command. Available commands:")
-            print("  create         - Create tables only")
-            print("  seed           - Seed with all sample data")
-            print("  seed-users     - Seed with user data only")
-            print("  seed-master    - Seed with master data only")
-            print("  seed-projects  - Seed with projects data only")
-            print("  seed-tasks     - Seed with tasks data only")
-            print("  seed-sales     - Seed with sales orders data only")
-            print("  reset          - Drop and recreate tables with all sample data")
+            print("  create          - Create tables only")
+            print("  seed            - Seed with all sample data")
+            print("  seed-users      - Seed with user data only")
+            print("  seed-master     - Seed with master data only")
+            print("  seed-projects   - Seed with projects data only")
+            print("  seed-tasks      - Seed with tasks data only")
+            print("  seed-sales      - Seed with sales orders data only")
+            print("  seed-purchase   - Seed with purchase orders data only")
+            print("  reset           - Drop and recreate tables with all sample data")
     else:
         # Default: create tables and seed all data
         if create_tables():
@@ -927,6 +1142,7 @@ def main():
             seed_projects_data()
             seed_tasks_data()
             seed_sales_orders_data()
+            seed_purchase_orders_data()
     
     print("\n🎉 Database initialization complete!")
     print("You can now start the Flask application with: python3 app.py")

@@ -10,6 +10,7 @@ from tasks_collaboration import tasks_collaboration_bp, init_tasks_collaboration
 from sales_orders import sales_orders_bp, init_sales_orders
 from purchase_orders import purchase_orders_bp, init_purchase_orders
 from customer_invoices import customer_invoices_bp, init_customer_invoices
+from vendor_bills import vendor_bills_bp, init_vendor_bills
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -49,6 +50,9 @@ PurchaseOrder, PurchaseOrderLine = init_purchase_orders(db)
 # Initialize customer invoices module with database
 CustomerInvoice, CustomerInvoiceLine = init_customer_invoices(db)
 
+# Initialize vendor bills module with database
+VendorBill, VendorBillLine = init_vendor_bills(db)
+
 # Register blueprints
 app.register_blueprint(user_management_bp, url_prefix='/api/v1')
 app.register_blueprint(master_data_bp, url_prefix='/api/v1')
@@ -57,6 +61,7 @@ app.register_blueprint(tasks_collaboration_bp, url_prefix='/api/v1')
 app.register_blueprint(sales_orders_bp, url_prefix='/api/v1')
 app.register_blueprint(purchase_orders_bp, url_prefix='/api/v1')
 app.register_blueprint(customer_invoices_bp, url_prefix='/api/v1')
+app.register_blueprint(vendor_bills_bp, url_prefix='/api/v1')
 
 @app.route('/', methods=['GET'])
 def health_check():

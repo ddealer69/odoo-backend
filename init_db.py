@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember, Task, TaskAssignment, TaskComment, TaskAttachment, SalesOrder, SalesOrderLine, PurchaseOrder, PurchaseOrderLine, CustomerInvoice, CustomerInvoiceLine
+from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember, Task, TaskAssignment, TaskComment, TaskAttachment, SalesOrder, SalesOrderLine, PurchaseOrder, PurchaseOrderLine, CustomerInvoice, CustomerInvoiceLine, VendorBill, VendorBillLine
 
 def create_tables():
     """Create all database tables"""
@@ -1297,6 +1297,221 @@ def seed_customer_invoices_data():
         traceback.print_exc()
         return False
 
+def seed_vendor_bills_data():
+    """Seed vendor bills and bill lines"""
+    try:
+        with app.app_context():
+            print("\n📄 Seeding Vendor Bills Data...")
+            
+            from datetime import date, timedelta
+            
+            # Get sample projects, vendors, products, and purchase order lines
+            projects = Project.query.all()
+            vendors = Partner.query.filter(Partner.type.in_(['vendor', 'both'])).all()
+            products = Product.query.all()
+            purchase_order_lines = PurchaseOrderLine.query.all()
+            
+            if not projects or not vendors:
+                print("  ⚠️  No projects or vendors found. Please seed master data and projects first.")
+                return False
+            
+            # Sample vendor bills
+            bills_data = [
+                {
+                    'bill_number': 'BILL-2024-001',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'vendor': vendors[0] if len(vendors) > 0 else None,
+                    'bill_date': date(2024, 11, 5),
+                    'due_date': date(2024, 12, 5),
+                    'status': 'posted',
+                    'currency': 'INR',
+                    'notes': 'Photography services bill',
+                    'lines': [
+                        {
+                            'product': products[2] if len(products) > 2 else None,
+                            'description': 'Photography Services - Brand Shoot',
+                            'quantity': 1,
+                            'unit_cost': 15000.00,
+                            'purchase_order_line': purchase_order_lines[0] if len(purchase_order_lines) > 0 else None
+                        },
+                        {
+                            'product': None,
+                            'description': 'Photo Editing & Retouching',
+                            'quantity': 20,
+                            'unit_cost': 500.00,
+                            'purchase_order_line': None
+                        }
+                    ]
+                },
+                {
+                    'bill_number': 'BILL-2024-002',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'vendor': vendors[1] if len(vendors) > 1 else vendors[0],
+                    'bill_date': date(2024, 11, 8),
+                    'due_date': date(2024, 12, 8),
+                    'status': 'posted',
+                    'currency': 'INR',
+                    'notes': 'Cloud hosting and domain bill',
+                    'lines': [
+                        {
+                            'product': None,
+                            'description': 'Cloud Server Hosting - Annual',
+                            'quantity': 1,
+                            'unit_cost': 12000.00,
+                            'purchase_order_line': purchase_order_lines[1] if len(purchase_order_lines) > 1 else None
+                        },
+                        {
+                            'product': None,
+                            'description': 'Domain Registration',
+                            'quantity': 2,
+                            'unit_cost': 1000.00,
+                            'purchase_order_line': None
+                        }
+                    ]
+                },
+                {
+                    'bill_number': 'BILL-2024-003',
+                    'project': projects[1] if len(projects) > 1 else projects[0],
+                    'vendor': vendors[0] if len(vendors) > 0 else None,
+                    'bill_date': date(2024, 11, 12),
+                    'due_date': date(2024, 12, 12),
+                    'status': 'draft',
+                    'currency': 'USD',
+                    'notes': 'MVP development tools',
+                    'lines': [
+                        {
+                            'product': products[1] if len(products) > 1 else None,
+                            'description': 'Development Tools License',
+                            'quantity': 5,
+                            'unit_cost': 200.00,
+                            'purchase_order_line': None
+                        }
+                    ]
+                },
+                {
+                    'bill_number': 'BILL-2024-004',
+                    'project': projects[2] if len(projects) > 2 else projects[0],
+                    'vendor': vendors[1] if len(vendors) > 1 else vendors[0],
+                    'bill_date': date(2024, 11, 18),
+                    'due_date': date(2024, 12, 18),
+                    'status': 'draft',
+                    'currency': 'INR',
+                    'notes': 'CRM system infrastructure',
+                    'lines': [
+                        {
+                            'product': None,
+                            'description': 'Database Server Setup',
+                            'quantity': 1,
+                            'unit_cost': 25000.00,
+                            'purchase_order_line': None
+                        },
+                        {
+                            'product': None,
+                            'description': 'SSL Certificates',
+                            'quantity': 3,
+                            'unit_cost': 2000.00,
+                            'purchase_order_line': None
+                        }
+                    ]
+                },
+                {
+                    'bill_number': 'BILL-2024-005',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'vendor': vendors[0] if len(vendors) > 0 else None,
+                    'bill_date': date(2024, 11, 20),
+                    'due_date': None,
+                    'status': 'paid',
+                    'currency': 'INR',
+                    'notes': 'Video production services',
+                    'lines': [
+                        {
+                            'product': None,
+                            'description': 'Video Shoot & Production',
+                            'quantity': 1,
+                            'unit_cost': 35000.00,
+                            'purchase_order_line': None
+                        },
+                        {
+                            'product': None,
+                            'description': 'Video Editing',
+                            'quantity': 8,
+                            'unit_cost': 1500.00,
+                            'purchase_order_line': None
+                        }
+                    ]
+                }
+            ]
+            
+            # Create bills
+            for bill_data in bills_data:
+                # Check if bill already exists
+                existing_bill = VendorBill.query.filter_by(bill_number=bill_data['bill_number']).first()
+                if existing_bill:
+                    print(f"  ⚠️  Bill already exists: {bill_data['bill_number']}")
+                    continue
+                
+                lines_data = bill_data.pop('lines')
+                project = bill_data.pop('project')
+                vendor = bill_data.pop('vendor')
+                
+                if not project or not vendor:
+                    print(f"  ⚠️  Skipping bill {bill_data['bill_number']} - missing project or vendor")
+                    continue
+                
+                bill = VendorBill(
+                    bill_number=bill_data['bill_number'],
+                    project_id=project.id,
+                    vendor_id=vendor.id,
+                    bill_date=bill_data['bill_date'],
+                    due_date=bill_data['due_date'],
+                    status=bill_data['status'],
+                    currency=bill_data['currency'],
+                    notes=bill_data['notes']
+                )
+                
+                db.session.add(bill)
+                db.session.flush()
+                print(f"  📄 Created bill: {bill_data['bill_number']}")
+                
+                # Add bill lines
+                total_amount = 0
+                for line_data in lines_data:
+                    product = line_data.pop('product', None)
+                    purchase_order_line = line_data.pop('purchase_order_line', None)
+                    
+                    bill_line = VendorBillLine(
+                        vendor_bill_id=bill.id,
+                        product_id=product.id if product else None,
+                        description=line_data['description'],
+                        quantity=line_data['quantity'],
+                        unit_cost=line_data['unit_cost'],
+                        purchase_order_line_id=purchase_order_line.id if purchase_order_line else None
+                    )
+                    
+                    db.session.add(bill_line)
+                    line_total = float(line_data['quantity']) * float(line_data['unit_cost'])
+                    total_amount += line_total
+                    print(f"    📝 Added line: {line_data['description']} - {line_data['quantity']} x {line_data['unit_cost']} = {line_total}")
+                
+                print(f"    💰 Total bill amount: {total_amount} {bill_data['currency']}")
+            
+            db.session.commit()
+            print("✅ Vendor bills data seeded successfully!")
+            
+            # Print summary
+            print("\n📊 Vendor Bills Summary:")
+            print(f"  Vendor Bills: {VendorBill.query.count()}")
+            print(f"  Bill Lines: {VendorBillLine.query.count()}")
+            
+            return True
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error seeding vendor bills data: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def reset_database():
     """Drop and recreate all tables"""
     try:
@@ -1327,6 +1542,7 @@ def main():
                 seed_sales_orders_data()
                 seed_purchase_orders_data()
                 seed_customer_invoices_data()
+                seed_vendor_bills_data()
         elif command == 'seed':
             seed_sample_data()
             seed_master_data()
@@ -1335,6 +1551,7 @@ def main():
             seed_sales_orders_data()
             seed_purchase_orders_data()
             seed_customer_invoices_data()
+            seed_vendor_bills_data()
         elif command == 'seed-users':
             seed_sample_data()
         elif command == 'seed-master':
@@ -1349,6 +1566,8 @@ def main():
             seed_purchase_orders_data()
         elif command == 'seed-invoices':
             seed_customer_invoices_data()
+        elif command == 'seed-bills':
+            seed_vendor_bills_data()
         elif command == 'create':
             create_tables()
         else:
@@ -1362,6 +1581,7 @@ def main():
             print("  seed-sales      - Seed with sales orders data only")
             print("  seed-purchase   - Seed with purchase orders data only")
             print("  seed-invoices   - Seed with customer invoices data only")
+            print("  seed-bills      - Seed with vendor bills data only")
             print("  reset           - Drop and recreate tables with all sample data")
     else:
         # Default: create tables and seed all data

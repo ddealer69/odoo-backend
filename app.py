@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from db_config import DATABASE_URI, DB_CONFIG
 from user_management import user_management_bp, init_user_management
+from master_data import master_data_bp, init_master_data
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -25,8 +26,12 @@ db = SQLAlchemy(app)
 # Initialize user management module with database
 Role, User, UserRole = init_user_management(db)
 
-# Register user management blueprint
+# Initialize master data module with database
+Partner, Product = init_master_data(db)
+
+# Register blueprints
 app.register_blueprint(user_management_bp, url_prefix='/api/v1')
+app.register_blueprint(master_data_bp, url_prefix='/api/v1')
 
 @app.route('/', methods=['GET'])
 def health_check():

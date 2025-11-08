@@ -1,15 +1,19 @@
-# Flask SQLAlchemy User Management API
+# Flask SQLAlchemy User Management & Master Data API
 
-A comprehensive Flask application with SQLAlchemy for MySQL database connectivity, featuring complete CRUD operations for user management, role-based access control, and user-role assignments.
+A comprehensive Flask application with SQLAlchemy for MySQL database connectivity, featuring complete CRUD operations for user management, role-based access control, user-role assignments, and master data management for partners and products.
 
 ## 📋 Features
 
 - **Complete User Management** - CRUD operations for users with authentication
 - **Role-Based Access Control** - Create, manage, and assign roles
 - **User-Role Assignments** - Flexible many-to-many relationships
+- **Master Data Management** - Complete CRUD for partners and products
+- **Partner Management** - Customer/Vendor/Both types with contact details
+- **Product Catalog** - SKU-based product management with pricing
+- **Advanced Search** - Filter and search across all entities
 - **MySQL Database Integration** - Using SQLAlchemy ORM with PyMySQL driver
 - **Comprehensive API** - RESTful endpoints for all operations
-- **Data Validation** - Email validation, password hashing, and integrity checks
+- **Data Validation** - Email validation, price validation, and integrity checks
 - **Error Handling** - Proper JSON error responses with detailed messages
 - **Database Initialization** - Automated setup with sample data
 
@@ -44,6 +48,28 @@ CREATE TABLE user_roles (
   UNIQUE KEY uq_user_role (user_id, role_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
+);
+
+-- Partners table (customers/vendors)
+CREATE TABLE partners (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(160) NOT NULL UNIQUE,
+  type ENUM('customer','vendor','both') NOT NULL DEFAULT 'customer',
+  email VARCHAR(190) NULL,
+  phone VARCHAR(40) NULL,
+  tax_id VARCHAR(50) NULL,
+  billing_address TEXT NULL,
+  shipping_address TEXT NULL
+);
+
+-- Products table
+CREATE TABLE products (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  sku VARCHAR(60) NOT NULL UNIQUE,
+  name VARCHAR(160) NOT NULL,
+  description TEXT NULL,
+  uom VARCHAR(30) NOT NULL DEFAULT 'unit',
+  default_price DECIMAL(12,2) NOT NULL DEFAULT 0.00
 );
 ```
 
@@ -84,7 +110,11 @@ Server runs on `http://localhost:5000`
 
 ### 4. Test All Endpoints
 ```bash
+# Test user management endpoints
 python3 test_endpoints.py
+
+# Test master data endpoints
+python3 test_master_data.py
 ```
 
 ## 📡 API Endpoints
@@ -247,6 +277,181 @@ GET /api/v1/users/{user_id}/roles
 GET /api/v1/user-roles
 ```
 
+### Master Data Management
+
+#### Partners
+
+#### Get All Partners
+```bash
+GET /api/v1/partners
+
+# Filter by type
+GET /api/v1/partners?type=customer
+
+# Search by name
+GET /api/v1/partners?search=Acme
+
+# Example Response:
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Acme Corporation",
+      "type": "customer",
+      "email": "contact@acme.com",
+      "phone": "+1-555-0101",
+      "tax_id": "TAX001",
+      "billing_address": "123 Business Ave, Business City, BC 12345",
+      "shipping_address": "123 Business Ave, Business City, BC 12345"
+    }
+  ],
+  "count": 1
+}
+```
+
+#### Get Single Partner
+```bash
+GET /api/v1/partners/{partner_id}
+```
+
+#### Create Partner
+```bash
+POST /api/v1/partners
+Content-Type: application/json
+
+{
+  "name": "New Customer Corp",
+  "type": "customer",
+  "email": "contact@newcustomer.com",
+  "phone": "+1-555-0123",
+  "tax_id": "TAX123",
+  "billing_address": "123 Main St, City, State 12345",
+  "shipping_address": "456 Oak Ave, City, State 54321"
+}
+```
+
+#### Update Partner
+```bash
+PUT /api/v1/partners/{partner_id}
+Content-Type: application/json
+
+{
+  "name": "Updated Customer Corp",
+  "type": "both",
+  "phone": "+1-555-9999"
+}
+```
+
+#### Delete Partner
+```bash
+DELETE /api/v1/partners/{partner_id}
+```
+
+#### Advanced Partner Search
+```bash
+GET /api/v1/partners/search?name=Corp&type=customer&email=contact
+```
+
+#### Products
+
+#### Get All Products
+```bash
+GET /api/v1/products
+
+# Search by name
+GET /api/v1/products?search=Laptop
+
+# Search by SKU
+GET /api/v1/products?sku=LAP
+
+# Example Response:
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "sku": "LAPTOP-001",
+      "name": "Business Laptop Pro",
+      "description": "High-performance laptop for business users",
+      "uom": "pieces",
+      "default_price": 1299.99
+    }
+  ],
+  "count": 1
+}
+```
+
+#### Get Single Product
+```bash
+GET /api/v1/products/{product_id}
+```
+
+#### Get Product by SKU
+```bash
+GET /api/v1/products/sku/{sku}
+```
+
+#### Create Product
+```bash
+POST /api/v1/products
+Content-Type: application/json
+
+{
+  "sku": "NEW-PROD-001",
+  "name": "New Product",
+  "description": "Description of the new product",
+  "uom": "pieces",
+  "default_price": 99.99
+}
+```
+
+#### Update Product
+```bash
+PUT /api/v1/products/{product_id}
+Content-Type: application/json
+
+{
+  "name": "Updated Product Name",
+  "default_price": 129.99,
+  "description": "Updated description"
+}
+```
+
+#### Delete Product
+```bash
+DELETE /api/v1/products/{product_id}
+```
+
+#### Advanced Product Search
+```bash
+GET /api/v1/products/search?name=Laptop&min_price=100&max_price=2000&uom=pieces
+```
+
+#### Master Data Statistics
+```bash
+GET /api/v1/master-data/stats
+
+# Response:
+{
+  "status": "success",
+  "data": {
+    "partners": {
+      "total": 5,
+      "customers": 2,
+      "vendors": 2,
+      "both": 1
+    },
+    "products": {
+      "total": 8,
+      "with_price": 8,
+      "unique_uoms": ["pieces", "reams"],
+      "uom_count": 2
+    }
+  }
+}
+```
+
 ## 🧪 Testing Examples
 
 ### Complete Workflow Example
@@ -286,6 +491,38 @@ curl "http://localhost:5000/api/v1/users?include_roles=true"
 
 # 8. Get statistics
 curl http://localhost:5000/api/v1/stats
+
+# 9. Create a partner
+curl -X POST http://localhost:5000/api/v1/partners \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Partner Ltd",
+    "type": "customer",
+    "email": "contact@testpartner.com",
+    "phone": "+1-555-0123"
+  }'
+
+# 10. Create a product
+curl -X POST http://localhost:5000/api/v1/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sku": "TEST-001",
+    "name": "Test Product",
+    "description": "A test product",
+    "default_price": 49.99
+  }'
+
+# 11. Get all partners
+curl http://localhost:5000/api/v1/partners
+
+# 12. Get all products
+curl http://localhost:5000/api/v1/products
+
+# 13. Search partners by type
+curl "http://localhost:5000/api/v1/partners?type=customer"
+
+# 14. Search products by name
+curl "http://localhost:5000/api/v1/products?search=Test"
 ```
 
 ### Advanced Testing
@@ -313,13 +550,15 @@ curl -X DELETE http://localhost:5000/api/v1/roles/1
 
 ```
 odoo-backend/
-├── app.py                 # Main Flask application
-├── user_management.py     # User management module with models & routes
-├── db_config.py          # Database configuration
-├── init_db.py            # Database initialization script
-├── test_endpoints.py     # Comprehensive API testing script
-├── requirements.txt      # Python dependencies
-└── README.md            # This documentation
+├── app.py                     # Main Flask application
+├── user_management.py         # User management module with models & routes
+├── master_data.py            # Master data module with partner & product models
+├── db_config.py              # Database configuration
+├── init_db.py                # Database initialization script
+├── test_endpoints.py         # User management API testing script
+├── test_master_data.py       # Master data API testing script
+├── requirements.txt          # Python dependencies
+└── README.md                # This documentation
 ```
 
 ## 🔒 Dependencies
@@ -371,6 +610,23 @@ The initialization script creates sample users and roles:
 
 Default password for all sample users: `[role]123` (e.g., admin123, manager123)
 
+**Partners:**
+- Acme Corporation (customer)
+- Global Suppliers Inc (vendor)
+- TechnoMart Ltd (both)
+- Local Retail Store (customer)
+- Premium Parts Co (vendor)
+
+**Products:**
+- LAPTOP-001: Business Laptop Pro ($1,299.99)
+- MOUSE-001: Wireless Optical Mouse ($29.99)
+- KB-001: Mechanical Keyboard ($149.99)
+- MON-001: 27" 4K Monitor ($399.99)
+- CABLE-001: USB-C Cable 2m ($19.99)
+- PAPER-001: Copy Paper A4 ($8.99/ream)
+- PEN-001: Blue Ballpoint Pen ($2.49)
+- CHAIR-001: Ergonomic Office Chair ($299.99)
+
 ## 🎯 Usage Scenarios
 
 Perfect for:
@@ -380,6 +636,11 @@ Perfect for:
 - HR systems
 - Project management tools
 - Multi-tenant applications
+- Customer relationship management (CRM)
+- Vendor management systems
+- Product catalog management
+- E-commerce backends
+- Inventory management systems
 
 ## 🔧 Customization
 

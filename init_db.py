@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, Role, User, UserRole
+from app import app, db, Role, User, UserRole, Partner, Product
 
 def create_tables():
     """Create all database tables"""
@@ -132,6 +132,162 @@ def seed_sample_data():
         print(f"❌ Error seeding data: {e}")
         return False
 
+def seed_master_data():
+    """Seed database with master data"""
+    try:
+        with app.app_context():
+            print("🌱 Seeding master data...")
+            
+            # Create sample partners
+            partners_data = [
+                {
+                    'name': 'Acme Corporation',
+                    'type': 'customer',
+                    'email': 'contact@acme.com',
+                    'phone': '+1-555-0101',
+                    'tax_id': 'TAX001',
+                    'billing_address': '123 Business Ave, Business City, BC 12345',
+                    'shipping_address': '123 Business Ave, Business City, BC 12345'
+                },
+                {
+                    'name': 'Global Suppliers Inc',
+                    'type': 'vendor',
+                    'email': 'sales@globalsuppliers.com',
+                    'phone': '+1-555-0202',
+                    'tax_id': 'TAX002',
+                    'billing_address': '456 Supplier St, Supply City, SC 54321',
+                    'shipping_address': '456 Supplier St, Supply City, SC 54321'
+                },
+                {
+                    'name': 'TechnoMart Ltd',
+                    'type': 'both',
+                    'email': 'info@technomart.com',
+                    'phone': '+1-555-0303',
+                    'tax_id': 'TAX003',
+                    'billing_address': '789 Tech Plaza, Tech City, TC 67890',
+                    'shipping_address': '789 Tech Plaza, Tech City, TC 67890'
+                },
+                {
+                    'name': 'Local Retail Store',
+                    'type': 'customer',
+                    'email': 'manager@localretail.com',
+                    'phone': '+1-555-0404',
+                    'tax_id': 'TAX004',
+                    'billing_address': '321 Main St, Downtown, DT 13579',
+                    'shipping_address': '321 Main St, Downtown, DT 13579'
+                },
+                {
+                    'name': 'Premium Parts Co',
+                    'type': 'vendor',
+                    'email': 'orders@premiumparts.com',
+                    'phone': '+1-555-0505',
+                    'tax_id': 'TAX005',
+                    'billing_address': '654 Industrial Blvd, Industry City, IC 97531',
+                    'shipping_address': '654 Industrial Blvd, Industry City, IC 97531'
+                }
+            ]
+            
+            created_partners = []
+            for partner_data in partners_data:
+                # Check if partner already exists
+                existing_partner = Partner.query.filter_by(name=partner_data['name']).first()
+                if not existing_partner:
+                    partner = Partner(**partner_data)
+                    db.session.add(partner)
+                    created_partners.append(partner)
+                    print(f"  📝 Created partner: {partner_data['name']}")
+                else:
+                    created_partners.append(existing_partner)
+                    print(f"  ⚠️  Partner already exists: {partner_data['name']}")
+            
+            # Create sample products
+            products_data = [
+                {
+                    'sku': 'LAPTOP-001',
+                    'name': 'Business Laptop Pro',
+                    'description': 'High-performance laptop for business users',
+                    'uom': 'pieces',
+                    'default_price': 1299.99
+                },
+                {
+                    'sku': 'MOUSE-001',
+                    'name': 'Wireless Optical Mouse',
+                    'description': 'Ergonomic wireless mouse with optical sensor',
+                    'uom': 'pieces',
+                    'default_price': 29.99
+                },
+                {
+                    'sku': 'KB-001',
+                    'name': 'Mechanical Keyboard',
+                    'description': 'Premium mechanical keyboard with backlight',
+                    'uom': 'pieces',
+                    'default_price': 149.99
+                },
+                {
+                    'sku': 'MON-001',
+                    'name': '27" 4K Monitor',
+                    'description': 'Ultra HD 4K monitor for professional use',
+                    'uom': 'pieces',
+                    'default_price': 399.99
+                },
+                {
+                    'sku': 'CABLE-001',
+                    'name': 'USB-C Cable 2m',
+                    'description': 'High-speed USB-C cable, 2 meter length',
+                    'uom': 'pieces',
+                    'default_price': 19.99
+                },
+                {
+                    'sku': 'PAPER-001',
+                    'name': 'Copy Paper A4',
+                    'description': 'Premium white copy paper, 80gsm',
+                    'uom': 'reams',
+                    'default_price': 8.99
+                },
+                {
+                    'sku': 'PEN-001',
+                    'name': 'Blue Ballpoint Pen',
+                    'description': 'Professional ballpoint pen, blue ink',
+                    'uom': 'pieces',
+                    'default_price': 2.49
+                },
+                {
+                    'sku': 'CHAIR-001',
+                    'name': 'Ergonomic Office Chair',
+                    'description': 'Adjustable ergonomic chair with lumbar support',
+                    'uom': 'pieces',
+                    'default_price': 299.99
+                }
+            ]
+            
+            created_products = []
+            for product_data in products_data:
+                # Check if product already exists
+                existing_product = Product.query.filter_by(sku=product_data['sku']).first()
+                if not existing_product:
+                    product = Product(**product_data)
+                    db.session.add(product)
+                    created_products.append(product)
+                    print(f"  📦 Created product: {product_data['sku']} - {product_data['name']}")
+                else:
+                    created_products.append(existing_product)
+                    print(f"  ⚠️  Product already exists: {product_data['sku']}")
+            
+            db.session.commit()
+            print("✅ Master data seeded successfully!")
+            
+            # Print summary
+            print("\n📊 Master Data Summary:")
+            print(f"  Partners: {Partner.query.count()}")
+            print(f"  Products: {Product.query.count()}")
+            
+            return True
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error seeding master data: {e}")
+        return False
+
 def reset_database():
     """Drop and recreate all tables"""
     try:
@@ -156,19 +312,28 @@ def main():
         if command == 'reset':
             if reset_database():
                 seed_sample_data()
+                seed_master_data()
         elif command == 'seed':
             seed_sample_data()
+            seed_master_data()
+        elif command == 'seed-users':
+            seed_sample_data()
+        elif command == 'seed-master':
+            seed_master_data()
         elif command == 'create':
             create_tables()
         else:
             print("❌ Unknown command. Available commands:")
-            print("  create - Create tables only")
-            print("  seed   - Seed with sample data")
-            print("  reset  - Drop and recreate tables with sample data")
+            print("  create      - Create tables only")
+            print("  seed        - Seed with all sample data")
+            print("  seed-users  - Seed with user data only")
+            print("  seed-master - Seed with master data only")
+            print("  reset       - Drop and recreate tables with all sample data")
     else:
-        # Default: create tables and seed data
+        # Default: create tables and seed all data
         if create_tables():
             seed_sample_data()
+            seed_master_data()
     
     print("\n🎉 Database initialization complete!")
     print("You can now start the Flask application with: python3 app.py")

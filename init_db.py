@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, Role, User, UserRole, Partner, Product
+from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember
 
 def create_tables():
     """Create all database tables"""
@@ -288,6 +288,141 @@ def seed_master_data():
         print(f"❌ Error seeding master data: {e}")
         return False
 
+def seed_projects_data():
+    """Seed database with projects and team data"""
+    try:
+        with app.app_context():
+            print("🌱 Seeding projects and teaming data...")
+            
+            # Get existing users for project assignments
+            admin_user = User.query.filter_by(email='admin@example.com').first()
+            manager_user = User.query.filter_by(email='manager@example.com').first()
+            dev_user = User.query.filter_by(email='dev1@example.com').first()
+            designer_user = User.query.filter_by(email='designer@example.com').first()
+            tester_user = User.query.filter_by(email='tester@example.com').first()
+            
+            from datetime import date, timedelta
+            today = date.today()
+            
+            # Create sample projects
+            projects_data = [
+                {
+                    'project_code': 'WEB-2024-001',
+                    'name': 'E-commerce Website Redesign',
+                    'description': 'Complete redesign of the company e-commerce website with modern UI/UX',
+                    'project_manager_id': manager_user.id if manager_user else None,
+                    'start_date': today,
+                    'end_date': today + timedelta(days=90),
+                    'status': 'in_progress',
+                    'budget_amount': 50000.00,
+                    'members': [
+                        {'user': dev_user, 'role': 'Lead Developer'},
+                        {'user': designer_user, 'role': 'UI/UX Designer'},
+                        {'user': tester_user, 'role': 'QA Tester'}
+                    ]
+                },
+                {
+                    'project_code': 'MOB-2024-001',
+                    'name': 'Mobile App Development',
+                    'description': 'Development of cross-platform mobile application',
+                    'project_manager_id': manager_user.id if manager_user else None,
+                    'start_date': today + timedelta(days=30),
+                    'end_date': today + timedelta(days=180),
+                    'status': 'planned',
+                    'budget_amount': 75000.00,
+                    'members': [
+                        {'user': dev_user, 'role': 'Mobile Developer'},
+                        {'user': designer_user, 'role': 'UI Designer'}
+                    ]
+                },
+                {
+                    'project_code': 'INT-2024-001',
+                    'name': 'System Integration Project',
+                    'description': 'Integration of multiple backend systems and APIs',
+                    'project_manager_id': admin_user.id if admin_user else None,
+                    'start_date': today - timedelta(days=60),
+                    'end_date': today + timedelta(days=30),
+                    'status': 'in_progress',
+                    'budget_amount': 35000.00,
+                    'members': [
+                        {'user': dev_user, 'role': 'Backend Developer'},
+                        {'user': tester_user, 'role': 'Integration Tester'}
+                    ]
+                },
+                {
+                    'project_code': 'UPG-2024-001',
+                    'name': 'Database Upgrade',
+                    'description': 'Upgrade legacy database system to modern architecture',
+                    'project_manager_id': admin_user.id if admin_user else None,
+                    'start_date': today - timedelta(days=120),
+                    'end_date': today - timedelta(days=30),
+                    'status': 'completed',
+                    'budget_amount': 25000.00,
+                    'members': [
+                        {'user': dev_user, 'role': 'Database Developer'},
+                        {'user': tester_user, 'role': 'Data Migration Tester'}
+                    ]
+                },
+                {
+                    'project_code': 'RES-2024-001',
+                    'name': 'Research & Development',
+                    'description': 'Research new technologies and development methodologies',
+                    'project_manager_id': None,  # No project manager assigned
+                    'start_date': today,
+                    'end_date': today + timedelta(days=365),
+                    'status': 'on_hold',
+                    'budget_amount': 15000.00,
+                    'members': [
+                        {'user': dev_user, 'role': 'Research Developer'}
+                    ]
+                }
+            ]
+            
+            created_projects = []
+            for project_data in projects_data:
+                # Check if project already exists
+                existing_project = Project.query.filter_by(project_code=project_data['project_code']).first()
+                if not existing_project:
+                    # Extract member data before creating project
+                    member_assignments = project_data.pop('members', [])
+                    
+                    project = Project(**project_data)
+                    db.session.add(project)
+                    db.session.flush()  # Get the project ID
+                    created_projects.append(project)
+                    print(f"  📁 Created project: {project_data['project_code']} - {project_data['name']}")
+                    
+                    # Assign team members
+                    for member_data in member_assignments:
+                        user = member_data['user']
+                        role = member_data['role']
+                        if user:
+                            project_member = ProjectMember(
+                                project_id=project.id,
+                                user_id=user.id,
+                                role_in_project=role
+                            )
+                            db.session.add(project_member)
+                            print(f"    👥 Assigned {user.email} as {role}")
+                else:
+                    created_projects.append(existing_project)
+                    print(f"  ⚠️  Project already exists: {project_data['project_code']}")
+            
+            db.session.commit()
+            print("✅ Projects and teaming data seeded successfully!")
+            
+            # Print summary
+            print("\n📊 Projects Summary:")
+            print(f"  Projects: {Project.query.count()}")
+            print(f"  Project Members: {ProjectMember.query.count()}")
+            
+            return True
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error seeding projects data: {e}")
+        return False
+
 def reset_database():
     """Drop and recreate all tables"""
     try:
@@ -313,27 +448,33 @@ def main():
             if reset_database():
                 seed_sample_data()
                 seed_master_data()
+                seed_projects_data()
         elif command == 'seed':
             seed_sample_data()
             seed_master_data()
+            seed_projects_data()
         elif command == 'seed-users':
             seed_sample_data()
         elif command == 'seed-master':
             seed_master_data()
+        elif command == 'seed-projects':
+            seed_projects_data()
         elif command == 'create':
             create_tables()
         else:
             print("❌ Unknown command. Available commands:")
-            print("  create      - Create tables only")
-            print("  seed        - Seed with all sample data")
-            print("  seed-users  - Seed with user data only")
-            print("  seed-master - Seed with master data only")
-            print("  reset       - Drop and recreate tables with all sample data")
+            print("  create         - Create tables only")
+            print("  seed           - Seed with all sample data")
+            print("  seed-users     - Seed with user data only")
+            print("  seed-master    - Seed with master data only")
+            print("  seed-projects  - Seed with projects data only")
+            print("  reset          - Drop and recreate tables with all sample data")
     else:
         # Default: create tables and seed all data
         if create_tables():
             seed_sample_data()
             seed_master_data()
+            seed_projects_data()
     
     print("\n🎉 Database initialization complete!")
     print("You can now start the Flask application with: python3 app.py")

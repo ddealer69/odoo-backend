@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember, Task, TaskAssignment, TaskComment, TaskAttachment, SalesOrder, SalesOrderLine, PurchaseOrder, PurchaseOrderLine
+from app import app, db, Role, User, UserRole, Partner, Product, Project, ProjectMember, Task, TaskAssignment, TaskComment, TaskAttachment, SalesOrder, SalesOrderLine, PurchaseOrder, PurchaseOrderLine, CustomerInvoice, CustomerInvoiceLine
 
 def create_tables():
     """Create all database tables"""
@@ -1073,6 +1073,230 @@ def seed_purchase_orders_data():
         traceback.print_exc()
         return False
 
+def seed_customer_invoices_data():
+    """Seed customer invoices and invoice lines"""
+    try:
+        with app.app_context():
+            print("\n📄 Seeding Customer Invoices Data...")
+            
+            from datetime import date, timedelta
+            
+            # Get sample projects, customers, products, and sales order lines
+            projects = Project.query.all()
+            customers = Partner.query.filter(Partner.type.in_(['customer', 'both'])).all()
+            products = Product.query.all()
+            sales_order_lines = SalesOrderLine.query.all()
+            
+            if not projects or not customers:
+                print("  ⚠️  No projects or customers found. Please seed master data and projects first.")
+                return False
+            
+            # Sample customer invoices
+            invoices_data = [
+                {
+                    'invoice_number': 'INV-2024-001',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'customer': customers[0] if len(customers) > 0 else None,
+                    'invoice_date': date(2024, 11, 10),
+                    'due_date': date(2024, 12, 10),
+                    'status': 'posted',
+                    'currency': 'INR',
+                    'notes': 'First milestone invoice',
+                    'lines': [
+                        {
+                            'product': products[0] if len(products) > 0 else None,
+                            'description': 'Website Design - Phase 1',
+                            'quantity': 1,
+                            'unit_price': 50000.00,
+                            'sales_order_line': sales_order_lines[0] if len(sales_order_lines) > 0 else None,
+                            'source_type': 'sales_order'
+                        },
+                        {
+                            'product': None,
+                            'description': 'Project Management Services',
+                            'quantity': 40,
+                            'unit_price': 1500.00,
+                            'sales_order_line': None,
+                            'source_type': 'timesheet'
+                        }
+                    ]
+                },
+                {
+                    'invoice_number': 'INV-2024-002',
+                    'project': projects[1] if len(projects) > 1 else projects[0],
+                    'customer': customers[0] if len(customers) > 0 else None,
+                    'invoice_date': date(2024, 11, 15),
+                    'due_date': date(2024, 12, 15),
+                    'status': 'posted',
+                    'currency': 'USD',
+                    'notes': 'MVP Development - Phase 1',
+                    'lines': [
+                        {
+                            'product': products[1] if len(products) > 1 else None,
+                            'description': 'Backend Development',
+                            'quantity': 1,
+                            'unit_price': 25000.00,
+                            'sales_order_line': None,
+                            'source_type': 'manual'
+                        },
+                        {
+                            'product': products[0] if len(products) > 0 else None,
+                            'description': 'Frontend Development',
+                            'quantity': 1,
+                            'unit_price': 20000.00,
+                            'sales_order_line': None,
+                            'source_type': 'manual'
+                        },
+                        {
+                            'product': None,
+                            'description': 'Travel & Accommodation',
+                            'quantity': 1,
+                            'unit_price': 5000.00,
+                            'sales_order_line': None,
+                            'source_type': 'expense'
+                        }
+                    ]
+                },
+                {
+                    'invoice_number': 'INV-2024-003',
+                    'project': projects[0] if len(projects) > 0 else None,
+                    'customer': customers[0] if len(customers) > 0 else None,
+                    'invoice_date': date(2024, 11, 20),
+                    'due_date': date(2024, 12, 20),
+                    'status': 'paid',
+                    'currency': 'INR',
+                    'notes': 'Website content creation',
+                    'lines': [
+                        {
+                            'product': products[2] if len(products) > 2 else None,
+                            'description': 'Content Writing Services',
+                            'quantity': 10,
+                            'unit_price': 2000.00,
+                            'sales_order_line': None,
+                            'source_type': 'manual'
+                        },
+                        {
+                            'product': None,
+                            'description': 'Stock Photos & Graphics',
+                            'quantity': 1,
+                            'unit_price': 5000.00,
+                            'sales_order_line': None,
+                            'source_type': 'expense'
+                        }
+                    ]
+                },
+                {
+                    'invoice_number': 'INV-2024-004',
+                    'project': projects[2] if len(projects) > 2 else projects[0],
+                    'customer': customers[1] if len(customers) > 1 else customers[0],
+                    'invoice_date': date(2024, 11, 5),
+                    'due_date': date(2024, 12, 5),
+                    'status': 'draft',
+                    'currency': 'EUR',
+                    'notes': 'Marketing campaign - draft invoice',
+                    'lines': [
+                        {
+                            'product': products[3] if len(products) > 3 else None,
+                            'description': 'Digital Marketing Campaign',
+                            'quantity': 1,
+                            'unit_price': 15000.00,
+                            'sales_order_line': None,
+                            'source_type': 'manual'
+                        }
+                    ]
+                },
+                {
+                    'invoice_number': 'INV-2024-005',
+                    'project': projects[1] if len(projects) > 1 else projects[0],
+                    'customer': customers[0] if len(customers) > 0 else None,
+                    'invoice_date': date(2024, 10, 25),
+                    'due_date': date(2024, 11, 25),
+                    'status': 'void',
+                    'currency': 'INR',
+                    'notes': 'Cancelled invoice - replaced by INV-2024-002',
+                    'lines': [
+                        {
+                            'product': None,
+                            'description': 'Initial consultation fee',
+                            'quantity': 1,
+                            'unit_price': 10000.00,
+                            'sales_order_line': None,
+                            'source_type': 'manual'
+                        }
+                    ]
+                }
+            ]
+            
+            for inv_data in invoices_data:
+                # Check if invoice already exists
+                existing_inv = CustomerInvoice.query.filter_by(invoice_number=inv_data['invoice_number']).first()
+                if existing_inv:
+                    print(f"  ⚠️  Invoice already exists: {inv_data['invoice_number']}")
+                    continue
+                
+                lines_data = inv_data.pop('lines')
+                project = inv_data.pop('project')
+                customer = inv_data.pop('customer')
+                
+                if not project or not customer:
+                    print(f"  ⚠️  Skipping invoice {inv_data['invoice_number']} - missing project or customer")
+                    continue
+                
+                invoice = CustomerInvoice(
+                    invoice_number=inv_data['invoice_number'],
+                    project_id=project.id,
+                    customer_id=customer.id,
+                    invoice_date=inv_data['invoice_date'],
+                    due_date=inv_data['due_date'],
+                    status=inv_data['status'],
+                    currency=inv_data['currency'],
+                    notes=inv_data['notes']
+                )
+                
+                db.session.add(invoice)
+                db.session.flush()
+                print(f"  📄 Created invoice: {inv_data['invoice_number']}")
+                
+                # Add invoice lines
+                total_amount = 0
+                for line_data in lines_data:
+                    product = line_data.pop('product', None)
+                    sales_order_line = line_data.pop('sales_order_line', None)
+                    
+                    invoice_line = CustomerInvoiceLine(
+                        customer_invoice_id=invoice.id,
+                        product_id=product.id if product else None,
+                        description=line_data['description'],
+                        quantity=line_data['quantity'],
+                        unit_price=line_data['unit_price'],
+                        sales_order_line_id=sales_order_line.id if sales_order_line else None,
+                        source_type=line_data['source_type']
+                    )
+                    
+                    db.session.add(invoice_line)
+                    line_total = float(line_data['quantity']) * float(line_data['unit_price'])
+                    total_amount += line_total
+                    print(f"    📝 Added line: {line_data['description']} - {line_data['quantity']} x {line_data['unit_price']} = {line_total}")
+                
+                print(f"    💰 Total invoice amount: {total_amount} {inv_data['currency']}")
+            
+            db.session.commit()
+            print("✅ Customer invoices data seeded successfully!")
+            
+            # Print summary
+            print("\n📊 Customer Invoices Summary:")
+            print(f"  Customer Invoices: {CustomerInvoice.query.count()}")
+            print(f"  Invoice Lines: {CustomerInvoiceLine.query.count()}")
+            
+            return True
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error seeding customer invoices data: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def reset_database():
     """Drop and recreate all tables"""
     try:
@@ -1102,6 +1326,7 @@ def main():
                 seed_tasks_data()
                 seed_sales_orders_data()
                 seed_purchase_orders_data()
+                seed_customer_invoices_data()
         elif command == 'seed':
             seed_sample_data()
             seed_master_data()
@@ -1109,6 +1334,7 @@ def main():
             seed_tasks_data()
             seed_sales_orders_data()
             seed_purchase_orders_data()
+            seed_customer_invoices_data()
         elif command == 'seed-users':
             seed_sample_data()
         elif command == 'seed-master':
@@ -1121,6 +1347,8 @@ def main():
             seed_sales_orders_data()
         elif command == 'seed-purchase':
             seed_purchase_orders_data()
+        elif command == 'seed-invoices':
+            seed_customer_invoices_data()
         elif command == 'create':
             create_tables()
         else:
@@ -1133,6 +1361,7 @@ def main():
             print("  seed-tasks      - Seed with tasks data only")
             print("  seed-sales      - Seed with sales orders data only")
             print("  seed-purchase   - Seed with purchase orders data only")
+            print("  seed-invoices   - Seed with customer invoices data only")
             print("  reset           - Drop and recreate tables with all sample data")
     else:
         # Default: create tables and seed all data
@@ -1143,6 +1372,7 @@ def main():
             seed_tasks_data()
             seed_sales_orders_data()
             seed_purchase_orders_data()
+            seed_customer_invoices_data()
     
     print("\n🎉 Database initialization complete!")
     print("You can now start the Flask application with: python3 app.py")
